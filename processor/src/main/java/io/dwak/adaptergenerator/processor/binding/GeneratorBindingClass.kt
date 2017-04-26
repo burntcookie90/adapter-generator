@@ -42,10 +42,17 @@ class GeneratorBindingClass(val classPackage: String,
     val fullAdapterTypeName = ParameterizedTypeName.get(recyclerAdapter, viewHolder)
     val modelType = TypeName.get(binding?.model)
     val listOfModel = ParameterizedTypeName.get(ClassName.get(List::class.java), modelType)
+    val arrayListOfModel = ParameterizedTypeName.get(ClassName.get(ArrayList::class.java), modelType)
 
     val constructor = MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
-        .addStatement("list = new \$T<>()", ClassName.get(ArrayList::class.java))
+        .addStatement("this(new \$T())", arrayListOfModel)
+        .build()
+
+    val secondaryConstructor = MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PUBLIC)
+        .addParameter(ParameterSpec.builder(listOfModel, "list").build())
+        .addStatement("this.list = list")
         .build()
     val listOfModelField = FieldSpec.builder(listOfModel, "list")
         .addModifiers(Modifier.PRIVATE)
@@ -54,6 +61,7 @@ class GeneratorBindingClass(val classPackage: String,
         .addModifiers(Modifier.PUBLIC)
         .addField(listOfModelField)
         .addMethod(constructor)
+        .addMethod(secondaryConstructor)
         .superclass(fullAdapterTypeName)
 
     val layoutInflaterType = ClassName.get("android.view", "LayoutInflater")
@@ -86,10 +94,18 @@ class GeneratorBindingClass(val classPackage: String,
         .returns(TypeName.INT)
         .build()
 
+    val setItemsMethod = MethodSpec.methodBuilder("setItems")
+        .addModifiers(Modifier.PUBLIC)
+        .addParameter(ParameterSpec.builder(listOfModel, "list").build())
+        .addStatement("this.list = list")
+        .addStatement("notifyDataSetChanged()")
+        .build()
+
     return classBuilder
         .addMethod(onCreateViewHolderMethod)
         .addMethod(onBindViewHolderMethod)
         .addMethod(getItemCountMethod)
+        .addMethod(setItemsMethod)
         .build()
   }
 

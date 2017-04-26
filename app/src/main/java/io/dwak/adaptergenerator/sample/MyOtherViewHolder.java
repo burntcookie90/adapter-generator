@@ -7,14 +7,14 @@ import io.dwak.adaptergenerator.R;
 import io.dwak.adaptergenerator.annotation.AdapterGenerator;
 import io.dwak.adaptergenerator.annotation.BindViewHolder;
 
-@AdapterGenerator(layoutResId = R.layout.my_view_other_holder, model = MyModel.class)
+@AdapterGenerator(layoutResId = R.layout.my_view_other_holder, model = MyOtherModel.class)
 public class MyOtherViewHolder extends RecyclerView.ViewHolder {
     public MyOtherViewHolder(View itemView) {
         super(itemView);
     }
 
     @BindViewHolder
-    public void bind(MyModel model) {
+    public void bind(MyOtherModel model) {
 
     }
 }
