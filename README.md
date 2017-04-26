@@ -1,1 +1,1 @@
-# adapter-enerator
+# adapter-generator
