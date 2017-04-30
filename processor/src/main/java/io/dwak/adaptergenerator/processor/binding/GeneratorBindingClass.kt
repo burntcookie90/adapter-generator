@@ -29,9 +29,10 @@ class GeneratorBindingClass(val classPackage: String,
   private val bindings = hashMapOf<String, ClassBinding>()
 
   fun createAndAddBinding(element: Element) {
-    val binding = ClassBinding(element)
-    bindings.put(binding.name, binding)
     messager.note("create and add $element")
+    val binding = ClassBinding(element, messager)
+    bindings.put(binding.name, binding)
+    messager.note("created: $binding")
   }
 
   fun generate(): TypeSpec {
@@ -52,7 +53,7 @@ class GeneratorBindingClass(val classPackage: String,
     val secondaryConstructor = MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
         .addParameter(ParameterSpec.builder(listOfModel, "list").build())
-        .addStatement("this.list = list")
+        .addStatement("this.list = new \$T(list)", arrayListOfModel)
         .build()
     val listOfModelField = FieldSpec.builder(listOfModel, "list")
         .addModifiers(Modifier.PRIVATE)
@@ -84,7 +85,7 @@ class GeneratorBindingClass(val classPackage: String,
         .addParameter(ParameterSpec.builder(targetClassName, "holder").build())
         .addParameter(ParameterSpec.builder(TypeName.INT, "position").build())
         .addAnnotation(AnnotationSpec.builder(Override::class.java).build())
-        .addStatement("holder.\$L(list.get(position))", binding?.enclosedBindMethod?.name)
+        .addStatement("holder.\$L(list.get(position))", binding?.bindMethod?.name)
         .build()
 
     val getItemCountMethod = MethodSpec.methodBuilder("getItemCount")
@@ -94,17 +95,38 @@ class GeneratorBindingClass(val classPackage: String,
         .returns(TypeName.INT)
         .build()
 
-    val setItemsMethod = MethodSpec.methodBuilder("setItems")
-        .addModifiers(Modifier.PUBLIC)
-        .addParameter(ParameterSpec.builder(listOfModel, "list").build())
-        .addStatement("this.list = list")
-        .addStatement("notifyDataSetChanged()")
-        .build()
+    val setItemsMethod = if (binding?.diffCallback == null) {
+      MethodSpec.methodBuilder("setItems")
+          .addModifiers(Modifier.PUBLIC)
+          .addParameter(ParameterSpec.builder(listOfModel, "list").build())
+          .addStatement("this.list = list")
+          .addStatement("notifyDataSetChanged()")
+          .build()
+    }
+    else {
+      val diffUtil = ClassName.get("android.support.v7.util", "DiffUtil")
+      val diffCallback = ClassName.get(binding.diffCallback)
+      MethodSpec.methodBuilder("setItems")
+          .addModifiers(Modifier.PUBLIC)
+          .addParameter(ParameterSpec.builder(listOfModel, "list").build())
+          .addStatement("\$T.calculateDiff(new \$T(this.list, list)).dispatchUpdatesTo(this)",
+              diffUtil,
+              diffCallback)
+          .addStatement("this.list = new \$T(list)", arrayListOfModel)
+          .build()
+    }
+
+    val getItemsMethod = MethodSpec.methodBuilder("getItems")
+            .addModifiers(Modifier.PUBLIC)
+            .addStatement("return list")
+            .returns(listOfModel)
+            .build()
 
     return classBuilder
         .addMethod(onCreateViewHolderMethod)
         .addMethod(onBindViewHolderMethod)
         .addMethod(getItemCountMethod)
+        .addMethod(getItemsMethod)
         .addMethod(setItemsMethod)
         .build()
   }
