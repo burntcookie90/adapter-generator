@@ -1,10 +1,9 @@
 package io.dwak.adaptergenerator.processor.binding
 
 import com.squareup.javapoet.*
-import io.dwak.adaptergenerator.processor.extension.note
 import io.dwak.adaptergenerator.processor.model.ClassBinding
 import java.io.IOException
-import java.util.ArrayList
+import java.util.*
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
 import javax.annotation.processing.ProcessingEnvironment
@@ -29,14 +28,11 @@ class GeneratorBindingClass(val classPackage: String,
   private val bindings = hashMapOf<String, ClassBinding>()
 
   fun createAndAddBinding(element: Element) {
-    messager.note("create and add $element")
-    val binding = ClassBinding(element, messager)
+    val binding = ClassBinding(element)
     bindings.put(binding.name, binding)
-    messager.note("created: $binding")
   }
 
   fun generate(): TypeSpec {
-    messager.note("generate ${targetClass}: $bindings")
     val binding = bindings[targetClass]
     val recyclerAdapter = ClassName.get("android.support.v7.widget.RecyclerView", "Adapter")
     val viewHolder = ClassName.get(classPackage, targetClass)

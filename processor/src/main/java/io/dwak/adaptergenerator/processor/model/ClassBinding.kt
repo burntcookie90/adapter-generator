@@ -4,7 +4,6 @@ import io.dwak.adaptergenerator.annotation.AdapterGenerator
 import io.dwak.adaptergenerator.annotation.BindViewHolder
 import io.dwak.adaptergenerator.annotation.DiffCallback
 import io.dwak.adaptergenerator.processor.extension.hasAnnotationWithName
-import io.dwak.adaptergenerator.processor.extension.note
 import javax.annotation.processing.Messager
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -21,7 +20,6 @@ class ClassBinding(element: Element, messager: Messager? = null) {
   val diffCallback: TypeMirror?
 
   init {
-    messager?.note("ClassBinding: ${element.enclosedElements}")
     val instance = element.getAnnotation(AdapterGenerator::class.java)
     layoutResId = instance.layoutResId
     model = getModel(instance)

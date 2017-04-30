@@ -2,7 +2,10 @@ package io.dwak.adaptergenerator.processor
 
 import io.dwak.adaptergenerator.annotation.AdapterGenerator
 import io.dwak.adaptergenerator.processor.binding.GeneratorBindingClass
-import io.dwak.adaptergenerator.processor.extension.*
+import io.dwak.adaptergenerator.processor.extension.className
+import io.dwak.adaptergenerator.processor.extension.error
+import io.dwak.adaptergenerator.processor.extension.hasAnnotationWithName
+import io.dwak.adaptergenerator.processor.extension.packageName
 import java.io.IOException
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
@@ -44,7 +47,6 @@ open class AdapterGeneratorProcessor : AbstractProcessor() {
             }
           }
     }
-    messager.note("$generatorTargetClassMap")
     generatorTargetClassMap.values.forEach {
       try {
         it.writeToFiler(filer)
