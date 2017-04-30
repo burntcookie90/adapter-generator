@@ -28,3 +28,5 @@ dependencies {
     testCompile rootProject.ext.truth
     testCompile files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
 }
+
+apply from: '../gradle-mvn-push.gradle'
