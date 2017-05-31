@@ -11,6 +11,7 @@ import io.dwak.adaptergenerator.R;
 import io.dwak.adaptergenerator.annotation.AdapterGenerator;
 import io.dwak.adaptergenerator.annotation.BindViewHolder;
 import io.dwak.adaptergenerator.annotation.DiffCallback;
+import io.dwak.adaptergenerator.annotation.OnViewHolderClicked;
 
 @AdapterGenerator(layoutResId = R.layout.my_view_holder, model = MyModel.class)
 public class MyViewHolder extends RecyclerView.ViewHolder {
@@ -18,6 +19,11 @@ public class MyViewHolder extends RecyclerView.ViewHolder {
     public MyViewHolder(View itemView) {
         super(itemView);
         text = (TextView) itemView.findViewById(R.id.text);
+    }
+
+    @OnViewHolderClicked
+    public void onClick(MyModel model) {
+
     }
 
     @BindViewHolder

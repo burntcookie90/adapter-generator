@@ -3,6 +3,7 @@ package io.dwak.adaptergenerator.processor.model
 import io.dwak.adaptergenerator.annotation.AdapterGenerator
 import io.dwak.adaptergenerator.annotation.BindViewHolder
 import io.dwak.adaptergenerator.annotation.DiffCallback
+import io.dwak.adaptergenerator.annotation.OnViewHolderClicked
 import io.dwak.adaptergenerator.processor.extension.hasAnnotationWithName
 import javax.annotation.processing.Messager
 import javax.lang.model.element.Element
@@ -17,6 +18,7 @@ class ClassBinding(element: Element, messager: Messager? = null) {
   val layoutResId: Int
   val model: TypeMirror?
   val bindMethod: FieldBinding
+  val clickMethod: FieldBinding?
   val diffCallback: TypeMirror?
 
   init {
@@ -29,6 +31,12 @@ class ClassBinding(element: Element, messager: Messager? = null) {
         .take(1)
         .map { FieldBinding(it) }
         .first()
+
+    clickMethod = element.enclosedElements
+        .filter { it.hasAnnotationWithName(OnViewHolderClicked::class.java.simpleName) }
+        .take(1)
+        .map { FieldBinding(it) }
+        .firstOrNull()
 
     diffCallback = element.enclosedElements
         .firstOrNull { it.hasAnnotationWithName(DiffCallback::class.java.simpleName) }

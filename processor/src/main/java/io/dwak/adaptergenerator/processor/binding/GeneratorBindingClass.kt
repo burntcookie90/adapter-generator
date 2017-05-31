@@ -51,9 +51,11 @@ class GeneratorBindingClass(val classPackage: String,
         .addParameter(ParameterSpec.builder(listOfModel, "list").build())
         .addStatement("this.list = new \$T(list)", arrayListOfModel)
         .build()
+
     val listOfModelField = FieldSpec.builder(listOfModel, "list")
         .addModifiers(Modifier.PRIVATE)
         .build()
+
     val classBuilder = TypeSpec.classBuilder(className)
         .addModifiers(Modifier.PUBLIC)
         .addField(listOfModelField)
@@ -63,6 +65,7 @@ class GeneratorBindingClass(val classPackage: String,
 
     val layoutInflaterType = ClassName.get("android.view", "LayoutInflater")
     val viewType = ClassName.get("android.view", "View")
+
     val onCreateViewHolderMethod = MethodSpec.methodBuilder("onCreateViewHolder")
         .addModifiers(Modifier.PUBLIC)
         .addParameter(ParameterSpec.builder(ClassName.get("android.view", "ViewGroup"), "parent").build())
@@ -76,11 +79,35 @@ class GeneratorBindingClass(val classPackage: String,
         .returns(targetClassName)
         .build()
 
-    val onBindViewHolderMethod = MethodSpec.methodBuilder("onBindViewHolder")
+    val onBindViewHolderMethodBuilder = MethodSpec.methodBuilder("onBindViewHolder")
         .addModifiers(Modifier.PUBLIC)
-        .addParameter(ParameterSpec.builder(targetClassName, "holder").build())
-        .addParameter(ParameterSpec.builder(TypeName.INT, "position").build())
+        .addParameter(ParameterSpec.builder(targetClassName, "holder")
+            .addModifiers(Modifier.FINAL)
+            .build())
+        .addParameter(ParameterSpec.builder(TypeName.INT, "position")
+            .addModifiers(Modifier.FINAL)
+            .build())
         .addAnnotation(AnnotationSpec.builder(Override::class.java).build())
+
+    if(binding?.clickMethod != null) {
+      val clickListenerType = ClassName.get("android.view.View", "OnClickListener")
+      val onClickAnonymous = TypeSpec.anonymousClassBuilder("")
+          .superclass(clickListenerType)
+          .addMethod(MethodSpec.methodBuilder("onClick")
+              .addAnnotation(Override::class.java)
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(ParameterSpec.builder(viewType, "view")
+                  .build())
+              .addStatement("holder.\$L(list.get(position))", binding.clickMethod.name)
+              .build())
+          .build()
+
+      onBindViewHolderMethodBuilder.addStatement(
+          "holder.itemView.setOnClickListener(\$L)", onClickAnonymous
+      )
+    }
+
+    val onBindViewHolderMethod = onBindViewHolderMethodBuilder
         .addStatement("holder.\$L(list.get(position))", binding?.bindMethod?.name)
         .build()
 
