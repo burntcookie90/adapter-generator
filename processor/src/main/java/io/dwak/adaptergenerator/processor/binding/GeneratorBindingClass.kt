@@ -3,6 +3,7 @@ package io.dwak.adaptergenerator.processor.binding
 import com.squareup.javapoet.*
 import io.dwak.adaptergenerator.processor.model.ClassBinding
 import java.io.IOException
+import java.lang.reflect.Method
 import java.util.*
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
@@ -51,15 +52,10 @@ class GeneratorBindingClass(val classPackage: String,
         .addParameter(ParameterSpec.builder(listOfModel, "list").build())
         .addStatement("this.list = new \$T(list)", arrayListOfModel)
         .build()
+
     val listOfModelField = FieldSpec.builder(listOfModel, "list")
         .addModifiers(Modifier.PRIVATE)
         .build()
-    val classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
-        .addField(listOfModelField)
-        .addMethod(constructor)
-        .addMethod(secondaryConstructor)
-        .superclass(fullAdapterTypeName)
 
     val layoutInflaterType = ClassName.get("android.view", "LayoutInflater")
     val viewType = ClassName.get("android.view", "View")
@@ -76,11 +72,28 @@ class GeneratorBindingClass(val classPackage: String,
         .returns(targetClassName)
         .build()
 
+    val clickListenerType = ClassName.get("android.view.View", "OnClickListener")
+    val onClickAnonymous = TypeSpec.anonymousClassBuilder("")
+        .superclass(clickListenerType)
+        .addMethod(MethodSpec.methodBuilder("onClick")
+            .addAnnotation(Override::class.java)
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(ParameterSpec.builder(viewType, "view")
+                .build())
+            .beginControlFlow("if (listener != null)")
+            .addStatement("listener.onItemClick(list.get(position))")
+            .endControlFlow()
+            .build())
+        .build()
+
     val onBindViewHolderMethod = MethodSpec.methodBuilder("onBindViewHolder")
         .addModifiers(Modifier.PUBLIC)
         .addParameter(ParameterSpec.builder(targetClassName, "holder").build())
-        .addParameter(ParameterSpec.builder(TypeName.INT, "position").build())
+        .addParameter(ParameterSpec.builder(TypeName.INT, "position")
+            .addModifiers(Modifier.FINAL)
+            .build())
         .addAnnotation(AnnotationSpec.builder(Override::class.java).build())
+        .addStatement("holder.itemView.setOnClickListener(\$L)", onClickAnonymous)
         .addStatement("holder.\$L(list.get(position))", binding?.bindMethod?.name)
         .build()
 
@@ -113,17 +126,42 @@ class GeneratorBindingClass(val classPackage: String,
     }
 
     val getItemsMethod = MethodSpec.methodBuilder("getItems")
-            .addModifiers(Modifier.PUBLIC)
-            .addStatement("return list")
-            .returns(listOfModel)
-            .build()
+        .addModifiers(Modifier.PUBLIC)
+        .addStatement("return list")
+        .returns(listOfModel)
+        .build()
 
-    return classBuilder
+    val interactionListener = TypeSpec.interfaceBuilder("ItemClickListener")
+        .addMethod(MethodSpec.methodBuilder("onItemClick")
+            .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
+            .addParameter(ParameterSpec.builder(modelType, "model").build())
+            .build())
+        .build()
+
+
+    val itemClickName = ClassName.get("$classPackage.$className", "ItemClickListener")
+    val setOnClickMethod = MethodSpec.methodBuilder("setOnItemClickListener")
+        .addModifiers(Modifier.PUBLIC)
+        .addParameter(itemClickName, "listener")
+        .addStatement("this.listener = listener")
+        .build()
+
+    val clickField = FieldSpec.builder(itemClickName, "listener", Modifier.PRIVATE).build()
+
+    return TypeSpec.classBuilder(className)
+        .addModifiers(Modifier.PUBLIC)
+        .addField(listOfModelField)
+        .addField(clickField)
+        .addMethod(constructor)
+        .addMethod(secondaryConstructor)
+        .superclass(fullAdapterTypeName)
         .addMethod(onCreateViewHolderMethod)
         .addMethod(onBindViewHolderMethod)
         .addMethod(getItemCountMethod)
         .addMethod(getItemsMethod)
         .addMethod(setItemsMethod)
+        .addMethod(setOnClickMethod)
+        .addType(interactionListener)
         .build()
   }
 
